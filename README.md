@@ -1,4 +1,4 @@
-# Ember-data-fixture-adapter
+# Ember-data-fixture-adapter [![Build Status](https://travis-ci.org/emberjs/ember-data-fixture-adapter.svg)](https://travis-ci.org/emberjs/ember-data-fixture-adapter)
 
 A Fixture adapter for ember data. Typically used during the prototyping phase of a project (before a backend exists), although other approaches like pretender.js and http-mocks are general now preferred.
 
