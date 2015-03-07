@@ -1,4 +1,4 @@
-# Ember Data Fixture Adapter
+# Ember-data-fixture-adapter [![Build Status](https://travis-ci.org/emberjs/ember-data-fixture-adapter.svg)](https://travis-ci.org/emberjs/ember-data-fixture-adapter)
 
 [![Build Status](https://travis-ci.org/emberjs/ember-data-fixture-adapter.svg)](https://travis-ci.org/emberjs/ember-data-fixture-adapter)
 
