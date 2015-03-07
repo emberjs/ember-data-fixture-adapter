@@ -1,5 +1,7 @@
 # Ember-data-fixture-adapter
 
+[![Build Status](https://travis-ci.org/emberjs/ember-data-fixture-adapter.svg)](https://travis-ci.org/emberjs/ember-data-fixture-adapter)
+
 This README outlines the details of collaborating on this Ember addon.
 
 ## Installation
