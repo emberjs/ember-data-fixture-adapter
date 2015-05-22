@@ -1,4 +1,4 @@
-# Ember-data-fixture-adapter [![Build Status](https://travis-ci.org/emberjs/ember-data-fixture-adapter.svg)](https://travis-ci.org/emberjs/ember-data-fixture-adapter)
+# Ember Data Fixture Adapter
 
 [![Build Status](https://travis-ci.org/emberjs/ember-data-fixture-adapter.svg)](https://travis-ci.org/emberjs/ember-data-fixture-adapter)
 
@@ -28,21 +28,29 @@ You can define a `FIXTURES` array on your model with some data you would
 like available by default:
 
 ```javascript
-var Post = DS.Model.extend();
+import DS from 'ember-data';
 
-Post.FIXTURES = [
-  {
-    "id": 1,
-    "title": "Something something Basecamp"
-  }
-]
+var Post = DS.Model.extend({
+  title: DS.attr()
+});
+
+Post.reopenClass({
+  FIXTURES: [
+    {
+      id: 1,
+      title: "Something something Basecamp"
+    }
+  ]
+});
+
+export default Post;
 ```
 
 Then, in your tests, set your app's application adapter to the
 FixtureAdapter:
 
 ```javascript
-App.ApplicationAdapter = DS.FixtureAdapter.extend();
+export { default } from 'ember-data-fixture-adapter';
 ```
 
 ## Development Installation
