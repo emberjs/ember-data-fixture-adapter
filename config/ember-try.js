@@ -27,10 +27,12 @@ module.exports = {
     {
       name: 'ember-canary',
       dependencies: {
-        'ember': 'components/ember#canary'
+        'ember': 'components/ember#canary',
+        'ember-data': 'components/ember-data#canary'
       },
       resolutions: {
-        'ember': 'canary'
+        'ember': 'canary',
+        'ember-data': 'canary'
       }
     }
   ]
