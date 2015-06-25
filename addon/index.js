@@ -26,8 +26,8 @@ var counter = 0;
   @extends DS.Adapter
 */
 export default DS.Adapter.extend({
-  // by default, fixtures are already in normalized form
-  serializer: null,
+  defaultSerializer: '-default',
+
   // The fixture adapter does not support coalesceFindRequests
   coalesceFindRequests: false,
 
