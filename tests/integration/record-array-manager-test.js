@@ -28,7 +28,10 @@ var manager;
 module("integration/record_array_manager- destroy", {
   setup: function() {
     env = setupStore({
-      adapter: FixtureAdapter.extend()
+      adapter: {
+        name: 'fixture',
+        factory: FixtureAdapter
+      }
     });
     store = env.store;
 
@@ -91,46 +94,26 @@ test("destroying the store correctly cleans everything up", function(assert) {
 
   assert.equal(filterd2Summary.called.length, 0);
 
-  assert.equal(person._recordArrays.list.length, 2, 'expected the person to be a member of 2 recordArrays');
+  assert.ok(filterd.contains(person));
+  assert.ok(filterd2.contains(person));
+  assert.ok(!adapterPopulated.contains(person));
 
   Ember.run(filterd2, filterd2.destroy);
 
-  assert.equal(person._recordArrays.list.length, 1, 'expected the person to be a member of 1 recordArrays');
+  assert.ok(filterd.contains(person));
+  assert.ok(!filterd2.contains(person));
+  assert.ok(!adapterPopulated.contains(person));
 
   assert.equal(filterd2Summary.called.length, 1);
 
   Ember.run(manager, manager.destroy);
 
-  assert.equal(person._recordArrays.list.length, 0, 'expected the person to be a member of no recordArrays');
+  assert.ok(!filterd.contains(person));
+  assert.ok(!filterd2.contains(person));
+  assert.ok(!adapterPopulated.contains(person));
 
   assert.equal(filterd2Summary.called.length, 1);
 
   assert.equal(filterdSummary.called.length, 1);
   assert.equal(adapterPopulatedSummary.called.length, 1);
-});
-
-
-test("Should not filter a stor.all() array when a record property is changed", function(assert) {
-  var car;
-  var filterdSummary = tap(store.recordArrayManager, 'updateRecordArray');
-
-  store.all('car');
-
-  run(function() {
-    car = store.push('car', {
-      id: 1,
-      make: 'BMC',
-      model: 'Mini Cooper',
-      person: 1
-    });
-  });
-
-  assert.equal(filterdSummary.called.length, 1);
-
-  run(function() {
-    car.set('model', 'Mini');
-  });
-
-  assert.equal(filterdSummary.called.length, 1);
-
 });
