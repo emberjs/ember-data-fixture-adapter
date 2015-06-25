@@ -1,12 +1,23 @@
 # Ember-data-fixture-adapter
 
-This README outlines the details of collaborating on this Ember addon.
+A Fixture adapter for ember data. Typically used during the prototyping phase of a project (before a backend exists), although other approaches like pretender.js and http-mocks are general now preferred.
 
 ## Installation
 
-* `git clone` this repository
-* `npm install`
-* `bower install`
+* `ember install ember-data-fixture-adapter`
+
+```js
+// app/adapters/application.js
+export { default } from 'ember-data-fixture-adapter';
+```
+
+# Development of this addon:
+
+## installation
+
+* `npm i`
+* `bower i`
+* `ember s`
 
 ## Running
 
