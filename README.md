@@ -16,7 +16,7 @@ However, we will be happy to merge documentation fixes.
 
 ## Installation
 
-You can use it as an addon using `npm install --save ember-data-fixture-adapter`.
+You can use it as an addon using `ember install ember-data-fixture-adapter`.
 
 If you are using it in globals mode, you can use [Ember
 Giftwrap](https://github.com/ef4/ember-giftwrap) to build it for your
@@ -28,21 +28,30 @@ You can define a `FIXTURES` array on your model with some data you would
 like available by default:
 
 ```javascript
-var Post = DS.Model.extend();
+import DS from 'ember-data';
 
-Post.FIXTURES = [
-  {
-    "id": 1,
-    "title": "Something something Basecamp"
-  }
-]
+var Post = DS.Model.extend({
+  title: DS.attr()
+});
+
+Post.reopenClass({
+  FIXTURES: [
+    {
+      id: 1,
+      title: "Something something Basecamp"
+    }
+  ]
+});
+
+export default Post;
 ```
 
 Then, in your tests, set your app's application adapter to the
 FixtureAdapter:
 
 ```javascript
-App.ApplicationAdapter = DS.FixtureAdapter.extend();
+// app/adapters/application.js
+export { default } from 'ember-data-fixture-adapter';
 ```
 
 ## Development Installation

@@ -2,11 +2,15 @@ import DS from 'ember-data';
 import Ember from 'ember';
 
 var get = Ember.get;
-var fmt = Ember.String.fmt;
-var indexOf = Ember.EnumerableUtils.indexOf;
+var indexOf = Array.prototype.indexOf && function(array, item) {
+  return array.indexOf(item);
+} || Ember.EnumerableUtils.indexOf;
+
+var map = Array.prototype.map && function(array, cb, binding) {
+  return array.map(cb, binding);
+} || Ember.EnumerableUtils.map;
 
 var counter = 0;
-
 
 /**
   `DS.FixtureAdapter` is an adapter that loads records from memory.
@@ -26,8 +30,8 @@ var counter = 0;
   @extends DS.Adapter
 */
 export default DS.Adapter.extend({
-  // by default, fixtures are already in normalized form
-  serializer: null,
+  defaultSerializer: '-default',
+
   // The fixture adapter does not support coalesceFindRequests
   coalesceFindRequests: false,
 
@@ -62,13 +66,13 @@ export default DS.Adapter.extend({
     @param {Subclass of DS.Model} typeClass
     @return {Array}
   */
-  fixturesForType: function(typeClass) {
+  fixturesForType(typeClass) {
     if (typeClass.FIXTURES) {
-      var fixtures = Ember.A(typeClass.FIXTURES);
-      return fixtures.map(function(fixture) {
+      var fixtures = typeClass.FIXTURES;
+      return map(fixtures, (fixture) => {
         var fixtureIdType = typeof fixture.id;
-        if (fixtureIdType !== "number" && fixtureIdType !== "string") {
-          throw new Error(fmt('the id property must be defined as a number or string for fixture %@', [fixture]));
+        if (fixtureIdType !== 'number' && fixtureIdType !== 'string') {
+          throw new Error(`the id property must be defined as a number or string for fixture ${fixture}`);
         }
         fixture.id = fixture.id + '';
         return fixture;
@@ -86,7 +90,7 @@ export default DS.Adapter.extend({
     @param {Subclass of DS.Model} typeClass
     @return {Promise|Array}
   */
-  queryFixtures: function(fixtures, query, typeClass) {
+  queryFixtures(/*fixtures, query, typeClass*/) {
     Ember.assert('Not implemented: You must override the DS.FixtureAdapter::queryFixtures method to support querying the fixture store.');
   },
 
@@ -95,9 +99,11 @@ export default DS.Adapter.extend({
     @param {Subclass of DS.Model} typeClass
     @param {Array} fixture
   */
-  updateFixtures: function(typeClass, fixture) {
+  updateFixtures(typeClass, fixture) {
     if (!typeClass.FIXTURES) {
-      typeClass.FIXTURES = [];
+      typeClass.reopenClass({
+        FIXTURES: []
+      });
     }
 
     var fixtures = typeClass.FIXTURES;
@@ -115,7 +121,7 @@ export default DS.Adapter.extend({
     @param {Subclass of DS.Model} typeClass
     @param {DS.Snapshot} snapshot
   */
-  mockJSON: function(store, typeClass, snapshot) {
+  mockJSON(store, typeClass, snapshot) {
     return store.serializerFor(snapshot.modelName).serialize(snapshot, { includeId: true });
   },
 
@@ -125,8 +131,8 @@ export default DS.Adapter.extend({
     @param {DS.Model} record
     @return {String} id
   */
-  generateIdForRecord: function(store) {
-    return "fixture-" + counter++;
+  generateIdForRecord(/*store*/) {
+    return `fixture-${counter++}`;
   },
 
   /**
@@ -137,20 +143,18 @@ export default DS.Adapter.extend({
     @param {DS.Snapshot} snapshot
     @return {Promise} promise
   */
-  find: function(store, typeClass, id, snapshot) {
+  find(store, typeClass, id/*, snapshot*/) {
     var fixtures = this.fixturesForType(typeClass);
     var fixture;
 
-    Ember.assert("Unable to find fixtures for model type "+typeClass.toString() +". If you're defining your fixtures using `Model.FIXTURES = ...`, please change it to `Model.reopenClass({ FIXTURES: ... })`.", fixtures);
+    Ember.assert(`Unable to find fixtures for model type ${typeClass.toString()}. If you're defining your fixtures using 'Model.FIXTURES = ...'', please change it to 'Model.reopenClass({ FIXTURES: ... })'.`, fixtures);
 
     if (fixtures) {
       fixture = Ember.A(fixtures).findBy('id', id);
     }
 
     if (fixture) {
-      return this.simulateRemoteCall(function() {
-        return fixture;
-      }, this);
+      return this.simulateRemoteCall(() => fixture);
     }
   },
 
@@ -162,21 +166,17 @@ export default DS.Adapter.extend({
     @param {Array} snapshots
     @return {Promise} promise
   */
-  findMany: function(store, typeClass, ids, snapshots) {
+  findMany(store, typeClass, ids/*, snapshots*/) {
     var fixtures = this.fixturesForType(typeClass);
 
-    Ember.assert("Unable to find fixtures for model type "+typeClass.toString(), fixtures);
+    Ember.assert(`Unable to find fixtures for model type ${typeClass.toString()}`, fixtures);
 
     if (fixtures) {
-      fixtures = fixtures.filter(function(item) {
-        return indexOf(ids, item.id) !== -1;
-      });
+      fixtures = fixtures.filter(item => indexOf(ids, item.id) !== -1);
     }
 
     if (fixtures) {
-      return this.simulateRemoteCall(function() {
-        return fixtures;
-      }, this);
+      return this.simulateRemoteCall(() => fixtures);
     }
   },
 
@@ -188,14 +188,12 @@ export default DS.Adapter.extend({
     @param {String} sinceToken
     @return {Promise} promise
   */
-  findAll: function(store, typeClass) {
+  findAll(store, typeClass) {
     var fixtures = this.fixturesForType(typeClass);
 
-    Ember.assert("Unable to find fixtures for model type "+typeClass.toString(), fixtures);
+    Ember.assert(`Unable to find fixtures for model type ${typeClass.toString()}`, fixtures);
 
-    return this.simulateRemoteCall(function() {
-      return fixtures;
-    }, this);
+    return this.simulateRemoteCall(() => fixtures);
   },
 
   /**
@@ -207,17 +205,15 @@ export default DS.Adapter.extend({
     @param {DS.AdapterPopulatedRecordArray} recordArray
     @return {Promise} promise
   */
-  findQuery: function(store, typeClass, query, array) {
+  findQuery(store, typeClass, query/*, array*/) {
     var fixtures = this.fixturesForType(typeClass);
 
-    Ember.assert("Unable to find fixtures for model type " + typeClass.toString(), fixtures);
+    Ember.assert(`Unable to find fixtures for model type ${typeClass.toString()}`, fixtures);
 
     fixtures = this.queryFixtures(fixtures, query, typeClass);
 
     if (fixtures) {
-      return this.simulateRemoteCall(function() {
-        return fixtures;
-      }, this);
+      return this.simulateRemoteCall(() => fixtures);
     }
   },
 
@@ -228,14 +224,12 @@ export default DS.Adapter.extend({
     @param {DS.Snapshot} snapshot
     @return {Promise} promise
   */
-  createRecord: function(store, typeClass, snapshot) {
+  createRecord(store, typeClass, snapshot) {
     var fixture = this.mockJSON(store, typeClass, snapshot);
 
     this.updateFixtures(typeClass, fixture);
 
-    return this.simulateRemoteCall(function() {
-      return fixture;
-    }, this);
+    return this.simulateRemoteCall(() => fixture);
   },
 
   /**
@@ -245,14 +239,12 @@ export default DS.Adapter.extend({
     @param {DS.Snapshot} snapshot
     @return {Promise} promise
   */
-  updateRecord: function(store, typeClass, snapshot) {
+  updateRecord(store, typeClass, snapshot) {
     var fixture = this.mockJSON(store, typeClass, snapshot);
 
     this.updateFixtures(typeClass, fixture);
 
-    return this.simulateRemoteCall(function() {
-      return fixture;
-    }, this);
+    return this.simulateRemoteCall(() => fixture);
   },
 
   /**
@@ -262,13 +254,10 @@ export default DS.Adapter.extend({
     @param {DS.Snapshot} snapshot
     @return {Promise} promise
   */
-  deleteRecord: function(store, typeClass, snapshot) {
+  deleteRecord(store, typeClass, snapshot) {
     this.deleteLoadedFixture(typeClass, snapshot);
 
-    return this.simulateRemoteCall(function() {
-      // no payload in a deletion
-      return null;
-    });
+    return this.simulateRemoteCall(() => null);
   },
 
   /*
@@ -277,7 +266,7 @@ export default DS.Adapter.extend({
     @param typeClass
     @param snapshot
   */
-  deleteLoadedFixture: function(typeClass, snapshot) {
+  deleteLoadedFixture(typeClass, snapshot) {
     var existingFixture = this.findExistingFixture(typeClass, snapshot);
 
     if (existingFixture) {
@@ -293,7 +282,7 @@ export default DS.Adapter.extend({
     @param typeClass
     @param snapshot
   */
-  findExistingFixture: function(typeClass, snapshot) {
+  findExistingFixture(typeClass, snapshot) {
     var fixtures = this.fixturesForType(typeClass);
     var id = snapshot.id;
 
@@ -306,14 +295,8 @@ export default DS.Adapter.extend({
     @param fixtures
     @param id
   */
-  findFixtureById: function(fixtures, id) {
-    return Ember.A(fixtures).find(function(r) {
-      if (''+get(r, 'id') === ''+id) {
-        return true;
-      } else {
-        return false;
-      }
-    });
+  findFixtureById(fixtures, id) {
+    return Ember.A(fixtures).find((r) => '' + get(r, 'id') === '' + id);
   },
 
   /*
@@ -322,22 +305,18 @@ export default DS.Adapter.extend({
     @param callback
     @param context
   */
-  simulateRemoteCall: function(callback, context) {
+  simulateRemoteCall(callback, context) {
     var adapter = this;
 
     return new Ember.RSVP.Promise(function(resolve) {
       var value = Ember.copy(callback.call(context), true);
       if (get(adapter, 'simulateRemoteResponse')) {
         // Schedule with setTimeout
-        Ember.run.later(function() {
-          resolve(value);
-        }, get(adapter, 'latency'));
+        Ember.run.later(null, resolve, value, get(adapter, 'latency'));
       } else {
         // Asynchronous, but at the of the runloop with zero latency
-        Ember.run.schedule('actions', null, function() {
-          resolve(value);
-        });
+        resolve(value);
       }
-    }, "DS: FixtureAdapter#simulateRemoteCall");
+    }, 'DS: FixtureAdapter#simulateRemoteCall');
   }
 });

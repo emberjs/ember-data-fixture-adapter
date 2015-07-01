@@ -24,7 +24,12 @@ module("integration/adapter/fixture_adapter - FixtureAdapter", {
       person: DS.belongsTo('person', { async: true })
     });
 
-    env = setupStore({ person: Person, phone: Phone, adapter: FixtureAdapter });
+    env = setupStore({
+      person: Person,
+      phone: Phone,
+      adapter: { name: 'fixture', factory: FixtureAdapter }
+    });
+
     env.adapter.simulateRemoteResponse = true;
     env.adapter.latency = 50;
 
@@ -42,44 +47,45 @@ module("integration/adapter/fixture_adapter - FixtureAdapter", {
 });
 
 test("should load data for a type asynchronously when it is requested", function(assert) {
-  Person.FIXTURES = [{
-    id: 'wycats',
-    firstName: "Yehuda",
-    lastName: "Katz",
+  Person.FIXTURES = [
+    {
+      id: 'wycats',
+      firstName: "Yehuda",
+      lastName: "Katz",
+      height: 65
+    },
+    {
+      id: 'ebryn',
+      firstName: "Erik",
+      lastName: "Brynjolffsosysdfon",
+      height: 70,
+      phones: [1, 2]
+    }];
 
-    height: 65
-  },
+    Phone.FIXTURES = [
+      {
+        id: 1,
+        person: 'ebryn'
+      },
+      {
+        id: 2,
+        person: 'ebryn'
+      }
+    ];
 
-  {
-    id: 'ebryn',
-    firstName: "Erik",
-    lastName: "Brynjolffsosysdfon",
+    run(env.store, 'find', 'person', 'ebryn').then(async(function(ebryn) {
+      assert.equal(get(ebryn, 'isLoaded'), true, "data loads asynchronously");
+      assert.equal(get(ebryn, 'height'), 70, "data from fixtures is loaded correctly");
 
-    height: 70,
-    phones: [1, 2]
-  }];
+      return Ember.RSVP.hash({ ebryn: ebryn, wycats: env.store.find('person', 'wycats') });
+    }, 1000)).then(async(function(records) {
+      assert.equal(get(records.wycats, 'isLoaded'), true, "subsequent requests for records are returned asynchronously");
+      assert.equal(get(records.wycats, 'height'), 65, "subsequent requested records contain correct information");
 
-  Phone.FIXTURES = [{
-    id: 1,
-    person: 'ebryn'
-  }, {
-    id: 2,
-    person: 'ebryn'
-  }];
-
-  run(env.store, 'find', 'person', 'ebryn').then(async(function(ebryn) {
-    assert.equal(get(ebryn, 'isLoaded'), true, "data loads asynchronously");
-    assert.equal(get(ebryn, 'height'), 70, "data from fixtures is loaded correctly");
-
-    return Ember.RSVP.hash({ ebryn: ebryn, wycats: env.store.find('person', 'wycats') });
-  }, 1000)).then(async(function(records) {
-    assert.equal(get(records.wycats, 'isLoaded'), true, "subsequent requests for records are returned asynchronously");
-    assert.equal(get(records.wycats, 'height'), 65, "subsequent requested records contain correct information");
-
-    return get(records.ebryn, 'phones');
-  }, 1000)).then(async(function(phones) {
-    assert.equal(get(phones, 'length'), 2, "relationships from fixtures is loaded correctly");
-  }, 1000));
+      return get(records.ebryn, 'phones');
+    }, 1000)).then(async(function(phones) {
+      assert.equal(get(phones, 'length'), 2, "relationships from fixtures is loaded correctly");
+    }, 1000));
 });
 
 test("should load data asynchronously at the end of the runloop when simulateRemoteResponse is false", function(assert) {
@@ -343,7 +349,12 @@ test("should save hasMany records", function(assert) {
 
   var ensureFixtureAdapterDoesNotLeak = async(function() {
     env.store.destroy();
-    env = setupStore({ person: Person, phone: Phone, adapter: FixtureAdapter });
+    env = setupStore({
+      person: Person,
+      phone: Phone,
+      adapter: { name: 'fixture', factory: FixtureAdapter }
+    });
+
     return env.store.find('phone').then(async(function(phones) {
       assert.equal(phones.get('length'), 0, "the fixture adapter should not leak after destroying the store");
     }));

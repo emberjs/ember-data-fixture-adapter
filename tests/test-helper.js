@@ -5,6 +5,7 @@ import resolver from './helpers/resolver';
 import {
   setResolver
 } from 'ember-qunit';
+import FixtureAdapter from 'ember-data-fixture-adapter';
 
 export function setupStore(options) {
   var container, registry;
@@ -36,12 +37,14 @@ export function setupStore(options) {
   }
 
   registry.register('store:main', DS.Store.extend({
-    adapter: adapter
+    adapter: adapter.name
   }));
 
   registry.register('serializer:-default', DS.JSONSerializer);
   registry.register('serializer:-rest', DS.RESTSerializer);
   registry.register('adapter:-rest', DS.RESTAdapter);
+
+  registry.register('adapter:' + adapter.name, adapter.factory);
 
   registry.injection('serializer', 'store', 'store:main');
 

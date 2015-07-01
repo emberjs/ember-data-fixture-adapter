@@ -24,9 +24,9 @@ var Car = DS.Model.extend({
 
 Car.toString = function() { return "Car"; };
 
-function initializeStore(adapter) {
+function initializeStore(name, factory) {
   env = setupStore({
-    adapter: adapter
+    adapter: { name: name, factory: factory }
   });
   store = env.store;
 
@@ -36,7 +36,7 @@ function initializeStore(adapter) {
 
 module("integration/store - destroy", {
   setup: function() {
-    initializeStore(FixtureAdapter.extend());
+    initializeStore('fixture', FixtureAdapter.extend());
   }
 });
 
@@ -73,7 +73,7 @@ test("destroying record during find doesn't cause error", function(assert) {
 
   var done = assert.async();
 
-  initializeStore(TestAdapter);
+  initializeStore('test', TestAdapter);
 
   var type = "car";
   var id = 1;
@@ -93,7 +93,7 @@ test("find calls do not resolve when the store is destroyed", function(assert) {
     }
   });
 
-  initializeStore(TestAdapter);
+  initializeStore('test', TestAdapter);
 
 
   var type = "car";
