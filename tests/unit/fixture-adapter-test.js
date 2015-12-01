@@ -73,11 +73,11 @@ test("should load data for a type asynchronously when it is requested", function
       }
     ];
 
-    run(env.store, 'find', 'person', 'ebryn').then(async(function(ebryn) {
+    run(env.store, 'findRecord', 'person', 'ebryn').then(async(function(ebryn) {
       assert.equal(get(ebryn, 'isLoaded'), true, "data loads asynchronously");
       assert.equal(get(ebryn, 'height'), 70, "data from fixtures is loaded correctly");
 
-      return Ember.RSVP.hash({ ebryn: ebryn, wycats: env.store.find('person', 'wycats') });
+      return Ember.RSVP.hash({ ebryn: ebryn, wycats: env.store.findRecord('person', 'wycats') });
     }, 1000)).then(async(function(records) {
       assert.equal(get(records.wycats, 'isLoaded'), true, "subsequent requests for records are returned asynchronously");
       assert.equal(get(records.wycats, 'height'), 65, "subsequent requested records contain correct information");
@@ -99,7 +99,7 @@ test("should load data asynchronously at the end of the runloop when simulateRem
   var wycats;
 
   Ember.run(function() {
-    env.store.find('person', 'wycats').then(function(person) {
+    env.store.findRecord('person', 'wycats').then(function(person) {
       wycats = person;
     });
   });
@@ -118,7 +118,7 @@ test("should create record asynchronously when it is committed", function(assert
 
   paul.on('didCreate', async(function() {
     assert.equal(get(paul, 'isNew'), false, "data loads asynchronously");
-    assert.equal(get(paul, 'isDirty'), false, "data loads asynchronously");
+    assert.equal(get(paul, 'hasDirtyAttributes'), false, "data loads asynchronously");
     assert.equal(get(paul, 'height'), 70, "data from fixtures is saved correctly");
 
     assert.equal(Person.FIXTURES.length, 1, "Record added to FIXTURES");
@@ -137,12 +137,22 @@ test("should create record asynchronously when it is committed", function(assert
 test("should update record asynchronously when it is committed", function(assert) {
   assert.equal(Person.FIXTURES.length, 0, "Fixtures is empty");
 
-  var paul = env.store.push('person', { id: 1, firstName: 'Paul', lastName: 'Chavard', height: 70 });
+  var paul = env.store.push({
+    data: {
+      type: 'person',
+      id: 1,
+      attributes: {
+        firstName: 'Paul',
+        lastName: 'Chavard',
+        height: 70
+      }
+    }
+  });
 
   paul.set('height', 80);
 
   paul.on('didUpdate', async(function() {
-    assert.equal(get(paul, 'isDirty'), false, "data loads asynchronously");
+    assert.equal(get(paul, 'hasDirtyAttributes'), false, "data loads asynchronously");
     assert.equal(get(paul, 'height'), 80, "data from fixtures is saved correctly");
 
     assert.equal(Person.FIXTURES.length, 1, "Record FIXTURES updated");
@@ -167,7 +177,17 @@ test("should delete record asynchronously when it is committed", function(assert
 
   assert.equal(Person.FIXTURES.length, 0, "Fixtures empty");
 
-  var paul = env.store.push('person', { id: 'paul', firstName: 'Paul', lastName: 'Chavard', height: 70 });
+  var paul = env.store.push({
+    data: {
+      type: 'person',
+      id: 1,
+      attributes: {
+        firstName: 'Paul',
+        lastName: 'Chavard',
+        height: 70
+      }
+    }
+  });
 
   paul.save().then(function() {
     paul.deleteRecord();
@@ -178,7 +198,7 @@ test("should delete record asynchronously when it is committed", function(assert
     window.clearTimeout(timer);
 
     assert.equal(get(paul, 'isDeleted'), true, "data deleted asynchronously");
-    assert.equal(get(paul, 'isDirty'), false, "data deleted asynchronously");
+    assert.equal(get(paul, 'hasDirtyAttributes'), false, "data deleted asynchronously");
 
     assert.equal(Person.FIXTURES.length, 0, "Record removed from FIXTURES");
     done();
@@ -217,7 +237,7 @@ test("should coerce integer ids into string", function(assert) {
     height: 65
   }];
 
-  env.store.find('person', 1).then(async(function(result) {
+  env.store.findRecord('person', 1).then(async(function(result) {
     assert.strictEqual(get(result, 'id'), "1", "should load integer model id as string");
   }));
 });
@@ -236,7 +256,7 @@ test("should coerce belongsTo ids into string", function(assert) {
     person: 1
   }];
 
-  env.store.find('phone', 1).then(async(function(result) {
+  env.store.findRecord('phone', 1).then(async(function(result) {
     get(result, 'person').then(async(function(person) {
       assert.strictEqual(get(person, 'id'), "1", "should load integer belongsTo id as string");
       assert.strictEqual(get(person, 'firstName'), "Adam", "resolved relationship with an integer belongsTo id");
@@ -251,7 +271,7 @@ test("only coerce belongsTo ids to string if id is defined and not null", functi
     id: 1
   }];
 
-  env.store.find('phone', 1).then(async(function(phone) {
+  env.store.findRecord('phone', 1).then(async(function(phone) {
     phone.get('person').then(async(function(person) {
       assert.equal(person, null);
     }));
@@ -267,7 +287,7 @@ test("should throw if ids are not defined in the FIXTURES", function(assert) {
 
   assert.throws(function() {
     run(function() {
-      env.store.find('person', 1);
+      env.store.findRecord('person', 1);
     });
   }, /the id property must be defined as a number or string for fixture/);
 });
@@ -277,7 +297,7 @@ test("0 is an acceptable ID in FIXTURES", function(assert) {
     id: 0
   }];
 
-  env.store.find('person', 0).then(async(function() {
+  env.store.findRecord('person', 0).then(async(function() {
     assert.ok(true, "0 is an acceptable ID, so no exception was thrown");
   }), function() {
     assert.ok(false, "should not get here");
@@ -296,7 +316,7 @@ test("copies fixtures instead of passing the direct reference", function(assert)
   }];
 
   var PersonAdapter = FixtureAdapter.extend({
-    find: function(store, type, id) {
+    findRecord: function(store, type, id) {
       return this._super(store, type, id).then(function(fixture) {
         return returnedFixture = fixture;
       });
@@ -309,7 +329,7 @@ test("copies fixtures instead of passing the direct reference", function(assert)
     env.registry.register('adapter:person', PersonAdapter);
   });
 
-  env.store.find('person', 1).then(function() {
+  env.store.findRecord('person', 1).then(function() {
     assert.ok(Person.FIXTURES[0] !== returnedFixture, 'returnedFixture does not have object identity with defined fixture');
     assert.deepEqual(Person.FIXTURES[0], returnedFixture);
     done();
@@ -355,11 +375,11 @@ test("should save hasMany records", function(assert) {
       adapter: { name: 'fixture', factory: FixtureAdapter }
     });
 
-    return env.store.find('phone').then(async(function(phones) {
+    return env.store.findAll('phone').then(async(function(phones) {
       assert.equal(phones.get('length'), 0, "the fixture adapter should not leak after destroying the store");
     }));
   });
-  env.store.find('person', 'tomjerry').then(createPhone)
+  env.store.findRecord('person', 'tomjerry').then(createPhone)
                                       .then(savePerson)
                                       .then(assertPersonPhones)
                                       .then(ensureFixtureAdapterDoesNotLeak);

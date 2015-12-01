@@ -143,7 +143,7 @@ export default DS.Adapter.extend({
     @param {DS.Snapshot} snapshot
     @return {Promise} promise
   */
-  find(store, typeClass, id/*, snapshot*/) {
+  findRecord(store, typeClass, id/*, snapshot*/) {
     var fixtures = this.fixturesForType(typeClass);
     var fixture;
 
@@ -205,7 +205,7 @@ export default DS.Adapter.extend({
     @param {DS.AdapterPopulatedRecordArray} recordArray
     @return {Promise} promise
   */
-  findQuery(store, typeClass, query/*, array*/) {
+  query(store, typeClass, query/*, array*/) {
     var fixtures = this.fixturesForType(typeClass);
 
     Ember.assert(`Unable to find fixtures for model type ${typeClass.toString()}`, fixtures);

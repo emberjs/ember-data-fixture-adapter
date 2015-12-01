@@ -8,18 +8,12 @@ import {
 import FixtureAdapter from 'ember-data-fixture-adapter';
 
 export function setupStore(options) {
-  var container, registry;
   var emberChannel = QUnit.urlParams.emberchannel || "release";
   var env = {};
   options = options || {};
 
-  if (emberChannel.match(/^beta|canary$/i)) {
-    registry = env.registry = new Ember.Registry();
-    container = env.container = registry.container();
-  } else {
-    container = env.container = new Ember.Container();
-    registry = env.registry = container;
-  }
+  var registry = env.registry = new Ember.Registry();
+  var container = env.container = registry.container();
 
   env.replaceContainerNormalize = function replaceContainerNormalize(fn) {
     if (env.registry) {
